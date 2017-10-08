@@ -3,13 +3,11 @@ from scipy import ndimage
 import cv2
 import numpy as np
 import sys
-sys.path.insert(0,'/data1/ravikiran/SketchObjPartSegmentation/src/caffe-switch/caffe/python')
-import caffe
 import torch
 from torch.autograd import Variable
 import torchvision.models as models
 import torch.nn.functional as F
-import deeplab_resnet 
+import deeplab_resnet
 from collections import OrderedDict
 import os
 from os import walk
@@ -20,7 +18,7 @@ from docopt import docopt
 
 docstr = """Evaluate ResNet-DeepLab trained on scenes (VOC 2012),a total of 21 labels including background
 
-Usage: 
+Usage:
     evalpyt.py [options]
 
 Options:
@@ -34,35 +32,34 @@ Options:
 """
 
 args = docopt(docstr, version='v0.1')
-print args
+print(args)
 
-def get_iou(pred,gt):
-    if pred.shape!= gt.shape:
-        print 'pred shape',pred.shape, 'gt shape', gt.shape
-    assert(pred.shape == gt.shape)    
+
+def get_iou(pred, gt):
+    if pred.shape != gt.shape:
+        print('pred shape', pred.shape, 'gt shape', gt.shape)
+    assert(pred.shape == gt.shape)
     gt = gt.astype(np.float32)
     pred = pred.astype(np.float32)
 
-    max_label = int(args['--NoLabels'])-1  # labels from 0,1, ... 20(for VOC)  
-    count = np.zeros((max_label+1,))
-    for j in range(max_label+1):
-        x = np.where(pred==j)
-        p_idx_j = set(zip(x[0].tolist(),x[1].tolist()))
-        x = np.where(gt==j)
-        GT_idx_j = set(zip(x[0].tolist(),x[1].tolist()))
-        #pdb.set_trace()     
-        n_jj = set.intersection(p_idx_j,GT_idx_j)
-        u_jj = set.union(p_idx_j,GT_idx_j)
-    
-        
-        if len(GT_idx_j)!=0:
-            count[j] = float(len(n_jj))/float(len(u_jj))
+    max_label = int(args['--NoLabels']) - 1  # labels from 0,1, ... 20(for VOC)
+    count = np.zeros((max_label + 1,))
+    for j in range(max_label + 1):
+        x = np.where(pred == j)
+        p_idx_j = set(zip(x[0].tolist(), x[1].tolist()))
+        x = np.where(gt == j)
+        GT_idx_j = set(zip(x[0].tolist(), x[1].tolist()))
+        # pdb.set_trace()
+        n_jj = set.intersection(p_idx_j, GT_idx_j)
+        u_jj = set.union(p_idx_j, GT_idx_j)
+
+        if len(GT_idx_j) != 0:
+            count[j] = float(len(n_jj)) / float(len(u_jj))
 
     result_class = count
-    Aiou = np.sum(result_class[:])/float(len(np.unique(gt))) 
-    
-    return Aiou
+    Aiou = np.sum(result_class[:]) / float(len(np.unique(gt)))
 
+    return Aiou
 
 
 gpu0 = int(args['--gpu0'])

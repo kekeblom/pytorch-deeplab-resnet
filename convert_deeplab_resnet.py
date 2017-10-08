@@ -67,11 +67,11 @@ def assert_almost_equal(caffe_tensor, th_tensor):
     c = caffe_tensor[0]
 
     if t.shape != c.shape:
-        print "t.shape", t.shape
-        print "c.shape", c.shape
+        print(("t.shape", t.shape))
+        print(("c.shape", c.shape))
 
     d = np.linalg.norm(t - c)
-    print "d", d
+    print(("d", d))
     assert d < 500
 
 def dist_(caffe_tensor, th_tensor):
@@ -79,11 +79,11 @@ def dist_(caffe_tensor, th_tensor):
     c = caffe_tensor[0]
 
     if t.shape != c.shape:
-        print "t.shape", t.shape
-        print "c.shape", c.shape
+        print(("t.shape", t.shape))
+        print(("c.shape", c.shape))
 
     d = np.linalg.norm(t - c)
-    print "d", d
+    print(("d", d))
 
 
 
@@ -99,8 +99,8 @@ def load_caffe(img_p):
     caffe.set_mode_cpu()
     #caffe.set_device(0)
 
-    prototxt = "data/test.prototxt" 
-    caffemodel = "data/train_iter_20000.caffemodel" 
+    prototxt = "data/test.prototxt"
+    caffemodel = "data/train_iter_20000.caffemodel"
     net = caffe.Net(prototxt,caffemodel,  caffe.TEST)
 
     net.blobs['data'].data[0] = img_p.transpose((2, 0, 1))
@@ -112,14 +112,14 @@ def load_caffe(img_p):
 
 
 def parse_pth_varnames(p, pth_varname, num_layers):
-    # this function has been modified to fix #4 
+    # this function has been modified to fix #4
 
     post = ''
     EXP = 'voc12'
     if ('weight' in pth_varname and 'conv2d_list' in pth_varname):
 #        #print ('res%d%s_branch%d%s'+post) % x
         if len(post)!=0:
-            post = post[1:]+'_' 
+            post = post[1:]+'_'
         y = (EXP,int(pth_varname[25]))
         return p.conv_kernel(('fc1_%s_'+post+ 'c%d') % y)
 
@@ -169,7 +169,7 @@ def parse_pth_varnames(p, pth_varname, num_layers):
         # scale 2 uses block letters
         block_str = letter(block_num)
     elif scale_num == 3 or scale_num == 4:
-        # scale 3 uses numbered blocks 
+        # scale 3 uses numbered blocks
         # scale 4 uses numbered blocks
         if num_layers == 50:
             block_str = letter(block_num)
@@ -219,34 +219,34 @@ def convert(img_p, layers):
     caffe_model = load_caffe(img_p)
 
     param_provider = CaffeParamProvider(caffe_model)
-    model = deeplab_resnet.Res_Deeplab(21) 
+    model = deeplab_resnet.Res_Deeplab(21)
     old_dict = model.state_dict()
     new_state_dict = OrderedDict()
-    keys = model.state_dict().keys()
+    keys = list(model.state_dict().keys())
 
     for var_name in keys[:]:
         data = parse_pth_varnames(param_provider, var_name, layers)
         new_state_dict[var_name] = torch.from_numpy(data).float()
-    
+
     model.load_state_dict(new_state_dict)
 
-    
+
     o = []
     def hook(module, input, output):
         #print module
         o.append(input[0].data.numpy())
-    
+
     model.Scale.conv1.register_forward_hook(hook)   #0, data
     model.Scale.bn1.register_forward_hook(hook)     #1 conv1 out
     model.Scale.relu.register_forward_hook(hook)  #2 batch norm out
     model.Scale.maxpool.register_forward_hook(hook)    #3 bn1, relu out
-    model.Scale.layer1._modules['0'].conv1.register_forward_hook(hook)   #4, pool1 out 
+    model.Scale.layer1._modules['0'].conv1.register_forward_hook(hook)   #4, pool1 out
     model.Scale.layer1._modules['1'].conv1.register_forward_hook(hook) #5, res2a out
     model.Scale.layer5.conv2d_list._modules['0'].register_forward_hook(hook) #6, res5c out
 
     model.eval()
-    output = model(Variable(torch.from_numpy(img_p[np.newaxis, :].transpose(0,3,1,2)).float(),volatile=True))  
-    
+    output = model(Variable(torch.from_numpy(img_p[np.newaxis, :].transpose(0,3,1,2)).float(),volatile=True))
+
     interp = nn.UpsamplingBilinear2d(size=(321, 321))
     output_temp = interp(output[3]).cpu().data[0].numpy()
     output_temp = output_temp.transpose(1,2,0)
@@ -263,10 +263,10 @@ def convert(img_p, layers):
     dist_(caffe_model.blobs['fc1_voc12_res05'].data,output[2].data.numpy())
     dist_(caffe_model.blobs['fc_fusion'].data,output[3].data.numpy())
 
-    print 'input image shape',img_p[np.newaxis, :].transpose(0,3,1,2).shape
-    print 'output shapes -'
+    print(('input image shape',img_p[np.newaxis, :].transpose(0,3,1,2).shape))
+    print('output shapes -')
     for a in output:
-	print 	a.data.numpy().shape
+        print((a.data.numpy().shape))
 
     torch.save(model.state_dict(),'data/MS_DeepLab_resnet_trained_VOC.pth')
 
@@ -276,7 +276,7 @@ def main():
     #img = load_image("data/2007_000033.jpg")
     img_p = preprocess(img)
 
-    print "CONVERTING Multi-scale DeepLab_resnet"
+    print("CONVERTING Multi-scale DeepLab_resnet")
     convert(img_p, layers = 101)
 
 

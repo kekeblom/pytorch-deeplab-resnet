@@ -20,9 +20,9 @@ def load_image(path, size=321):
 
 
 img = load_image("cat.jpg")
-print img.shape
+print((img.shape))
 img = preprocess(img)
-print img.shape
+print((img.shape))
 
 gts = np.zeros((1, 1, 321, 321)) #garbage value as this is irrelavent for conversion to .pth files
 
